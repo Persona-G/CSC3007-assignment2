@@ -1,0 +1,100 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="https://d3js.org/d3.v6.min.js"></script>
+
+        <title>Major Crimes</title>
+
+        <style>
+            body {
+                display: block;
+                width: max-content;
+                margin: auto;
+                align-content: center;
+                background-color: gray;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div style="text-align: center;">
+            <h3>Major Crimes for Year 2020</h3>
+        </div>
+        <div id="chart"></div>
+        <div class="tooltip"></div>
+    </body>
+
+    <script>
+        var margin = { top: 50, right: 50, bottom: 100, left: 50 },
+            width = 800 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+        const url = "https://data.gov.sg/api/action/datastore_search?resource_id=83c21090-bd19-4b54-ab6b-d999c251edcf";
+        d3.json(url).then((res) => {
+            var data = res.result.records;
+
+            var filter = data.filter((x) => { return x.year > 2019 });
+
+            const svg = d3
+                .select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr(
+                    "transform",
+                    "translate(" + margin.left + "," + margin.top + ")"
+                );
+
+            const x = d3.scaleBand()
+                .range([0, width])
+                .domain(data.map((d) => d.level_2))
+                .padding(0.2);
+
+            svg
+                .append("g")
+                .attr("transform", `translate(0, ${height})`)
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                .attr("transform", "translate(-10,0)rotate(-45)")
+                .style("text-anchor", "end");
+
+            const y = d3.scaleLinear()
+                .domain([0, 20000])
+                .range([height, 0]);
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            svg.selectAll("bar")
+                .data(filter)
+                .enter()
+                .append("rect")
+                .attr("x", d => x(d.level_2))
+                .attr("y", d => y(d.value))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - y(d.value))
+                .attr("fill", "maroon")
+
+                .on("mouseover", (event, d) => {
+                    d3.select(".tooltip")
+                        .text(d.level_2 + " = " + d.value)
+                        .style("position", "absolute")
+                        .style("background", "none")
+                        .style("left", (event.pageX) + "px")
+                        .style("top", (event.pageY) + "px");
+
+                    d3.select(event.currentTarget)
+                        .classed("selected", true);
+                })
+
+                .on("mouseout", (event, d) => {
+                    d3.select(".tooltip")
+                        .text("");
+
+                    d3.select(event.currentTarget)
+                        .classed("selected", false);
+                })
+        });
+    </script>
+</html>
